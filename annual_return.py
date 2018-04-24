@@ -5,6 +5,7 @@ import copy
 
 random.seed(time.time())
 
+
 class Year(object):
     def __init__(self, year=None, stocks=None, bonds=None, treasuries=None):
         self.year = int(year)
@@ -15,10 +16,11 @@ class Year(object):
     def __str__(self):
         return "{}, {}, {}, {}".format(self.year, self.stocks,
                                        self.bonds, self.treasuries)
+
     def get_ratios(self):
         return [self.stocks, self.bonds, self.treasuries]
-        
-        
+
+
 class Strategy(object):
     def __init__(self, addition, stocks, bonds, treasuries):
         self.addition = addition
@@ -30,27 +32,31 @@ class Strategy(object):
             raise StandardError("Over 100 entered for strategy")
 
     def __repr__(self):
-        return "Strategy({}, {}, {}, {})".format(3600, self.stocks,self.bonds,self.treasuries)
-    
+        return "Strategy({}, {}, {}, {})".format(3600, self.stocks, self.bonds, self.treasuries)
+
     def __str__(self):
         return "{}, {}, {}".format(self.stocks, self.bonds, self.treasuries)
-                                
+
+
 years = []
 
 with open("historical_data.csv", "r") as historical_data_csv:
     historical_data = csv.reader(historical_data_csv)
 
     for year in historical_data:
-        new_year = Year(year=year[1],
-                        stocks=year[2][:-1],
-                        bonds=year[4][:-1],
-                        treasuries=year[3][:-1])
+        new_year = Year(
+            year=year[1],
+            stocks=year[2][:-1],
+            treasuries=year[3][:-1],
+            bonds=year[4][:-1]
+        )
+
         years.append(new_year)
 
 
 def annual_return(num_years, strategy):
     balance = 0
-    
+
     distribution = {}
     deviations = []
     for y in range(num_years):
@@ -59,15 +65,16 @@ def annual_return(num_years, strategy):
 
         # Find the random year values
         random_year = random.choice(years)
-              
+
         distribution = {"stocks": balance * strategy.stocks * random_year.stocks,
                         "bonds": balance * strategy.bonds * random_year.bonds,
                         "treasuries": balance * strategy.treasuries * random_year.treasuries}
-        
+
         for invest_class, amount in distribution.items():
             balance += amount
-    
+
     return round(balance)
+
 
 def write_results(strat_returns):
     with open("data.csv", "w") as data_file:
@@ -78,17 +85,19 @@ def write_results(strat_returns):
 
             data_file.write(line[:-1] + "\n")
 
+
 if __name__ == "__main__":
-    stocks_strategy = Strategy(3600, 1, 0, 0)
-    bonds_strategy = Strategy(3600, 0, 1, 0)
-    treasuries_strategy = Strategy(3600, 0, 0, 1)
-    balanced_strategy = Strategy(3600, .7, .2, .1)
-    _50_50_strategy = Strategy(3600, .5, .5, 0)
-      
-    strats = [Strategy(3600, stock_amount, bond_amount, 0) for stock_amount, bond_amount in zip([x / 10 for x in range(0, 11, 1)], [x / 10 for x in range(10, -1, -1)])]
+    acending_decending_percentages = zip(
+        [x / 10 for x in range(0, 11, 1)],
+        [x / 10 for x in range(10, -1, -1)]
+    )
+
+    strats = [
+        Strategy(3600, stock_amount, bond_amount, 0) for stock_amount, bond_amount in acending_decending_percentages
+    ]
 
     strat_returns = []
-    
+
     for strat in strats:
         returns = []
         for run in range(1000):
@@ -97,9 +106,3 @@ if __name__ == "__main__":
         strat_returns.append(sorted(returns))
 
     write_results(strat_returns)
-    
-    
-
-
-
-              

@@ -1,69 +1,64 @@
+push!(LOAD_PATH, ".")
+
+
 module AnnualReturn
 
-
-struct StockHistory
-    year::Int
-    stocks::Float64
-    bonds::Float64
-    treasuries::Float64
-end
+using Plots
+import StockModels
 
 
-struct Strategy
-    yearly_addition::Float64
-    stocks::Float64
-    bonds::Float64
-    treasuries::Float64
-end
-
-
-function from_csv(file_path; runs=1000)
+function from_csv(file_path; runs=100000)
     raw_yearly_averages = load_csv_data(file_path)
 
     yearly_averages = to_model(raw_yearly_averages)
 
-    strat = Strategy(3600., .5, .5, 0.)
-
-    stocks = linspace(0., 1., 11)
-    bonds = linspace(1., 0., 11)
+    stocks = linspace(0., 1., 22)
+    bonds = linspace(1., 0., 22)
 
     strats = [
-       Strategy(3600., dist[1], dist[2], 0.) for
-       dist=zip(stocks, bonds)
+       StockModels.Strategy(3600., stock_amount, bond_amount, 0.) for
+       (stock_amount, bond_amount)=zip(stocks, bonds)
     ]
 
+    averages, devs = [], []
     for strat in strats
-        returns = []
-        for _ in 1:runs
-            calculated = calc_return(yearly_averages, strat)
-            push!(returns, calculated)
-        end
+        returns = map(_ -> calc_return(yearly_averages, strat), 1:runs)
+
+        rets_avg = mean(returns)
 
         strat_str = "$(@sprintf("%.2f", strat.stocks)) $(@sprintf("%.2f", strat.bonds)):"
-        result_str = " Mean $(@sprintf("%.2f", mean(returns))), Middle $(@sprintf("%.2f", middle(returns)))"
+        result_str = " Mean $(@sprintf("%.2f", rets_avg)), Std $(@sprintf("%.2f", std(returns)))"
+
         println(strat_str * result_str)
+
+        push!(averages, rets_avg)
+        push!(devs, std(returns))
     end
+
+    plotly()
+    plot([averages, devs], linewidth=2, label=["Mean" "Std Dev"])
+    plot!(title="Return over 40 years")
+    gui()
 end
 
 
 function calc_return(yearly_averages, strat; num_years=40)
     total = 0
+    yearly_averages_pool = copy(yearly_averages)
 
     for _ in 1:num_years
-        random_year = rand(yearly_averages)
+        random_year = rand(yearly_averages_pool)
 
         total += strat.yearly_addition
 
-        distribution = [
-             total * strat.stocks * random_year.stocks,
-             total * strat.bonds * random_year.bonds,
-             total * strat.treasuries * random_year.treasuries
-        ]
-
-        total += sum(distribution)
+        total += sum(total * [
+             strat.stocks * random_year.stocks,
+             strat.bonds * random_year.bonds,
+             strat.treasuries * random_year.treasuries
+        ])
     end
 
-    total
+    total - (num_years * strat.yearly_addition)
 end
 
 
@@ -95,7 +90,7 @@ function get_year_from(raw_year)
     bonds = parse_percentage(bonds)
     stocks = parse_percentage(stocks)
 
-    StockHistory(year, stocks, bonds, treasuries)
+    StockModels.StockHistory(year, stocks, bonds, treasuries)
 end
 
 end # AnnualReturn

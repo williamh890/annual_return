@@ -1,9 +1,10 @@
-include("annual_return.jl")
+push!(LOAD_PATH, ".")
 
 import AnnualReturn
 
 function main()
-    AnnualReturn.from_csv("historical_data.csv")
+    println("Calculating Return Using Monete Carlo")
+    AnnualReturn.from_csv("../historical_data.csv")
 end
 
 
